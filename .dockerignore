@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.local
+.git
+.gitignore
+server/.env
+server/node_modules
+server/dist
+Dockerfile
+.dockerignore
+README.md
+imp.txt
+metadata.json
