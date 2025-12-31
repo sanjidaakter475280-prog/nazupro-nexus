@@ -22,6 +22,7 @@ export interface IBot extends Document {
     dailyTakeProfit: number;
     tradingMode: 'passive' | 'semi' | 'auto';
     pairStatus: 'active' | 'paused';
+    selected_pair: string;
 }
 
 const BotSchema: Schema = new Schema({
@@ -45,7 +46,8 @@ const BotSchema: Schema = new Schema({
     dailyStopLoss: { type: Number },
     dailyTakeProfit: { type: Number },
     tradingMode: { type: String },
-    pairStatus: { type: String }
+    pairStatus: { type: String },
+    selected_pair: { type: String, default: null }
 }, { timestamps: true });
 
 export default mongoose.model<IBot>('Bot', BotSchema);
