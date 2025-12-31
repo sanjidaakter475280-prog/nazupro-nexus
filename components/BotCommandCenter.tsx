@@ -70,14 +70,18 @@ export const BotCommandCenter: React.FC<BotCommandCenterProps> = ({
 
   // 🔧 NEW: Enhanced START BOT handler with validation
   const handleStartBot = async () => {
-    if (!bot.selected_pair) {
-      setToastMessage("❌ Please select a pair first!");
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
+    if (bot.status === 'active') {
+      setToastMessage("🛑 Stopping trading...");
+      apiService.sendCommand(bot.id, 'stop_bot');
+    } else {
+      if (!bot.selected_pair) {
+        setToastMessage("❌ Please select a pair first!");
+        setTimeout(() => setToastMessage(null), 3000);
+        return;
+      }
+      setToastMessage("🚀 Starting trading...");
+      apiService.sendCommand(bot.id, 'start_bot', { pair: bot.selected_pair });
     }
-
-    setToastMessage(bot.status === 'active' ? "🛑 Stopping trading..." : "🚀 Starting trading...");
-    await onToggleStatus(bot.id);
   };
 
   const handleAssetClick = (symbol: string) => {

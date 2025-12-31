@@ -82,24 +82,80 @@ router.post('/bots/:id', async (req, res) => {
 router.post('/bots/:id/command', async (req, res) => {
     try {
         const { id } = req.params;
-        const { command, value } = req.body;
-
+        const { command, value }: { command: string, value: any } = req.body;
         const io = req.app.get('io');
-        if (io) {
-            io.emit('bot_command', {
-                bot_id: id,
-                cmd: command,
-                val: value
-            });
-            console.log(`📡 [SOCKET] Command sent to ${id}: ${command}`);
-            res.json({ success: true, message: `Command ${command} sent` });
-        } else {
-            res.status(500).json({ error: 'Socket.io not available' });
+
+        if (!io) {
+            return res.status(500).json({ error: 'Socket.io not available' });
         }
+
+        // Fetch the bot for context, ensures it exists.
+        const bot = await Bot.findOne({ id });
+        if (!bot) {
+            return res.status(404).json({ error: 'Bot not found' });
+        }
+
+        let payloadForPython = value;
+
+        // --- Command-Specific Logic ---
+
+        if (command === 'start_bot') {
+            // Determine the pair to use: command > db.
+            const pair = value?.pair || bot.selected_pair;
+            
+            if (!pair) {
+                console.error(`[ERROR] Start command for bot ${id} failed: No pair selected.`);
+                return res.status(400).json({ success: false, message: 'No pair has been selected for this bot.' });
+            }
+
+            // Update DB
+            bot.status = 'active';
+            bot.selected_pair = pair;
+            await bot.save();
+            
+            // Set the payload for python, ensuring it has the correct pair.
+            payloadForPython = { ...(typeof value === 'object' ? value : {}), pair: pair };
+
+        } else if (command === 'stop_bot') {
+            // Update DB
+            bot.status = 'inactive';
+            await bot.save();
+            // No change to payload needed for python.
+
+        } else if (command === 'fetch_historical_data') {
+            const pair = value; // In this command, value is the pair string itself
+            if (!pair || typeof pair !== 'string') {
+                 return res.status(400).json({ error: 'Invalid pair provided for history fetch.' });
+            }
+            // Update DB with the new pair for consistency
+            bot.selected_pair = pair;
+            await bot.save();
+            // No change to payload needed, python bot receives the pair string.
+
+        } else if (command === 'manual_trade') {
+            if (!value?.pair) {
+                 return res.status(400).json({ error: 'No pair provided for manual trade.' });
+            }
+            // No DB state change needed, just forward the command.
+        }
+
+        // --- Emit Command to Python Bot ---
+        io.emit('bot_command', {
+            bot_id: id,
+            cmd: command,
+            val: payloadForPython
+        });
+
+        console.log(`📡 [SOCKET] Command sent to ${id}: ${command} with value:`, payloadForPython);
+        res.json({ success: true, message: `Command '${command}' sent` });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send command' });
+        const error = err as Error;
+        console.error(`[ERROR] Failed to process command for bot ${req.params.id}:`, error.message);
+        res.status(500).json({ error: 'Failed to process command', details: error.message });
     }
 });
+
 
 // --- SIGNALS ---
 
