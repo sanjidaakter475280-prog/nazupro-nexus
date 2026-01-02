@@ -87,6 +87,25 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 🔧 NEW: Handle real-time signals from Python bot
+    socket.on('signal', async (signalData) => {
+        try {
+            // 1. Broadcast to all connected clients (Frontend)
+            io.emit('new_signal', signalData);
+            console.log(`📡 [SOCKET] Broadcast signal: ${signalData.pair} ${signalData.type}`);
+
+            // 2. Save to Database (Optional: handled by API, but good for backup)
+            const Signal = mongoose.model('Signal');
+            await Signal.findOneAndUpdate(
+                { id: signalData.id },
+                signalData,
+                { upsert: true, new: true }
+            );
+        } catch (err) {
+            console.error("❌ [SOCKET] Error handling signal:", err);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log(`🔌 [SOCKET] Node disconnected: ${socket.id}`);
     });
