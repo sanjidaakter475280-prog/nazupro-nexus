@@ -121,7 +121,7 @@ export const BotCommandCenter: React.FC<BotCommandCenterProps> = ({
       )}
 
       {/* Main Tactical Panel */}
-      <div className="bg-[#0B1222] border border-white/5 rounded-[3rem] p-8 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] space-y-8">
+      <div className="bg-[#0B1222] border border-white/5 rounded-[2rem] md:rounded-[3rem] p-5 md:p-8 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] space-y-6 md:space-y-8">
 
         {/* Bot Identity Header */}
         <div className="flex items-center gap-4">
